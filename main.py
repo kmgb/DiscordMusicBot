@@ -1,5 +1,3 @@
-# This example requires the "message_content" privileged intent to function.
-
 import asyncio
 import logging
 import os
@@ -64,7 +62,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def join(self, ctx, *, channel: discord.VoiceChannel = None):
-        """Joins a voice channel"""
+        """Joins a voice channel -- the one you're in, or the one you specify"""
 
         if ctx.voice_client is not None:
             return await ctx.voice_client.move_to(channel)
@@ -81,7 +79,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, url):
-        """Streams from a url or adds to queue"""
+        """Streams music from a url or adds to the queue"""
 
         if ctx.voice_client.is_playing():
             self.queue.append(url)
@@ -93,12 +91,16 @@ class Music(commands.Cog):
 
     @commands.command(aliases=["next"])
     async def skip(self, ctx):
+        """Skips the current song"""
+
         print("Skipping by user request")
         # Note: this causes the `after` function to be invoked, which is on_finish_streaming
         ctx.voice_client.stop()
 
     @commands.command()
     async def clear(self, ctx):
+        """Clear the queue"""
+
         print("Clearing queue by user request")
 
         self.clear_queue()
