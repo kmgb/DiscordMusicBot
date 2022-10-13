@@ -101,15 +101,20 @@ class Music(commands.Cog):
     async def clear(self, ctx):
         print("Clearing queue by user request")
 
-        self.queue.clear()
+        self.clear_queue()
         ctx.send("Cleared queue")
 
     def on_finish_streaming(self, ctx, e=None):
         """When we're done with a song, we play the next one, if available"""
+
         if e:
             print(f"Player error: {e}")
 
         print(f"Finished streaming, remaining queue: {self.queue}")
+
+        if not ctx.voice_client:
+            print("No more voice client, skipping playing the next song")
+            return
 
         if self.queue:
             url = self.queue.pop(0)
@@ -126,10 +131,14 @@ class Music(commands.Cog):
         await ctx.send(f"Now playing: {player.title}",
                        allowed_mentions=discord.AllowedMentions.none())
 
+    def clear_queue(self):
+        self.queue.clear()
+
     @commands.command(aliases=["leave", "quit", "exit", "end"])
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
 
+        await self.clear()
         await ctx.voice_client.disconnect()
 
     @play.before_invoke
@@ -163,6 +172,19 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
     )
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    print("Voice state update")
+    if not bot.voice_clients:
+        return
+
+    for client in bot.voice_clients:
+        if len(client.channel.members) <= 1:
+            print("Left alone in voice channel, leaving")
+            bot.get_cog("Music").clear_queue()
+            await client.disconnect()
 
 
 async def main():
