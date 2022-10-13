@@ -60,6 +60,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.queue = []
 
     @commands.command()
     async def join(self, ctx, *, channel: discord.VoiceChannel=None):
@@ -81,13 +82,42 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, url):
-        """Streams from a url (same as yt, but doesn't predownload)"""
+        """Streams from a url"""
 
-        async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-            ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+        reply = ""
 
-        await ctx.send(f'Now playing: {player.title}')
+        if ctx.voice_client.is_playing():
+            self.queue.append(url)
+            reply = "Added to queue"
+        else:
+            async with ctx.typing():
+                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+                ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
+
+            reply = f"Now playing: {player.title}"
+
+        await ctx.send(reply)
+
+
+    @commands.command(aliases=["next"])
+    async def skip(self, ctx, *, num: int=None):
+        ctx.voice_client.stop()
+        self.on_finish_streaming(ctx)
+
+
+    def on_finish_streaming(self, ctx, e=None):
+        if e:
+            print(f'Player error: {e}')
+
+        if self.queue:
+            url = self.queue.pop(0)
+            # Execute an async function from this synchronous callback:
+            asyncio.run_coroutine_threadsafe(self.play_song(ctx, url), self.bot.loop)
+
+
+    async def play_song(self, ctx, url):
+        player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        ctx.voice_client.play(player, after=self.on_finish_streaming)
 
 
     @commands.command(aliases=["leave"])
@@ -106,8 +136,8 @@ class Music(commands.Cog):
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
 
-        elif ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
+        # elif ctx.voice_client.is_playing():
+        #     ctx.voice_client.stop()
 
 
 intents = discord.Intents.default()
@@ -131,7 +161,7 @@ async def main():
 
     async with bot:
         await bot.add_cog(Music(bot))
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
+        # await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
         await bot.start(os.environ.get("DISCORD_TOKEN"))
 
 
