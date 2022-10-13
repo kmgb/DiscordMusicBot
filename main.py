@@ -151,8 +151,6 @@ class Music(commands.Cog):
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
 
-    # TODO: AFK timer before disconnecting and clearing queue
-
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -172,6 +170,13 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
     )
+
+
+@bot.event
+async def on_message(message: discord.Message):
+    # Filter out DMs from command processing
+    if message.guild:
+        await bot.process_commands(message)
 
 
 @bot.event
