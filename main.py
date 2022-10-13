@@ -95,7 +95,7 @@ class Music(commands.Cog):
 
         print("Skipping by user request")
         # Note: this causes the `after` function to be invoked, which is on_finish_streaming
-        ctx.voice_client.stop()
+        await ctx.voice_client.stop()
 
     @commands.command()
     async def clear(self, ctx):
@@ -104,7 +104,7 @@ class Music(commands.Cog):
         print("Clearing queue by user request")
 
         self.clear_queue()
-        ctx.send("Cleared queue")
+        await ctx.send("Cleared queue")
 
     def on_finish_streaming(self, ctx, e=None):
         """When we're done with a song, we play the next one, if available"""
@@ -141,12 +141,13 @@ class Music(commands.Cog):
         """Stops and disconnects the bot from voice"""
 
         await self.clear(ctx)
-        await ctx.voice_client.disconnect()
+
+        if ctx.voice_client:
+            await ctx.voice_client.disconnect()
 
     @play.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
-
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
