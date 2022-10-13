@@ -15,7 +15,7 @@ youtube_dl.utils.bug_reports_message = lambda: ''
 
 
 ytdl_format_options = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio/best[abr<=75]',  # TODO: Determine if the abr selector works
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
@@ -29,7 +29,7 @@ ytdl_format_options = {
 }
 
 ffmpeg_options = {
-    'options': '-vn',
+    'options': '-vn',  # TODO: does -bufsize 2 work?
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -78,25 +78,6 @@ class Music(commands.Cog):
         else:
             await channel.connect()
 
-    # @commands.command()
-    # async def play(self, ctx, *, query):
-    #     """Plays a file from the local filesystem"""
-
-    #     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-    #     ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-
-    #     await ctx.send(f'Now playing: {query}')
-
-    # @commands.command()
-    # async def yt(self, ctx, *, url):
-    #     """Plays from a url (almost anything youtube_dl supports)"""
-
-    #     async with ctx.typing():
-    #         player = await YTDLSource.from_url(url, loop=self.bot.loop)
-
-    #         ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-
-    #     await ctx.send(f'Now playing: {player.title}')
 
     @commands.command()
     async def play(self, ctx, *, url):
@@ -108,15 +89,6 @@ class Music(commands.Cog):
 
         await ctx.send(f'Now playing: {player.title}')
 
-    # @commands.command()
-    # async def volume(self, ctx, volume: int):
-    #     """Changes the player's volume"""
-
-    #     if ctx.voice_client is None:
-    #         return await ctx.send("Not connected to a voice channel.")
-
-    #     ctx.voice_client.source.volume = volume / 100
-    #     await ctx.send(f"Changed volume to {volume}%")
 
     @commands.command(aliases=["leave"])
     async def stop(self, ctx):
@@ -124,8 +96,6 @@ class Music(commands.Cog):
 
         await ctx.voice_client.disconnect()
 
-    # @play.before_invoke
-    # @yt.before_invoke
     @play.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
