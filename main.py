@@ -131,6 +131,7 @@ async def main():
 
     async with bot:
         await bot.add_cog(Music(bot))
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
         await bot.start(os.environ.get("DISCORD_TOKEN"))
 
 
