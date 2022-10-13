@@ -160,6 +160,10 @@ async def on_ready():
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
     print("------")
 
+    await bot.change_presence(
+        activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
+    )
+
 
 async def main():
     load_dotenv()
@@ -167,9 +171,6 @@ async def main():
     async with bot:
         await bot.add_cog(Music(bot))
         await bot.start(os.environ.get("DISCORD_TOKEN"))
-        await bot.change_presence(
-            activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
-        )
 
 
 discord.utils.setup_logging(level=logging.INFO, root=False)
