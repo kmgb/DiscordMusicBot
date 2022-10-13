@@ -82,32 +82,36 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx, *, url):
-        """Streams from a url"""
-
-        reply = ""
+        """Streams from a url or adds to queue"""
 
         if ctx.voice_client.is_playing():
             self.queue.append(url)
-            reply = "Added to queue"
+            print(f"Added song to queue as we're already playing something, queue={self.queue}")
+            await ctx.send("Added to queue")
         else:
             async with ctx.typing():
-                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-                ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
-
-            reply = f"Now playing: {player.title}"
-
-        await ctx.send(reply)
+                await self.play_song(ctx, url)
 
 
     @commands.command(aliases=["next"])
-    async def skip(self, ctx, *, num: int=None):
-        ctx.voice_client.stop()
-        self.on_finish_streaming(ctx)
+    async def skip(self, ctx):
+        print("Skipping by user request")
+        ctx.voice_client.stop()  # Note: this causes the `after` function to be invoked, which is on_finish_streaming
+
+
+    @commands.command()
+    async def clear(self, ctx):
+        print("Clearing queue by user request")
+
+        self.queue.clear()
+        ctx.send("Cleared queue")
 
 
     def on_finish_streaming(self, ctx, e=None):
         if e:
-            print(f'Player error: {e}')
+            print(f"Player error: {e}")
+
+        print(f"Finished streaming, remaining queue: {self.queue}")
 
         if self.queue:
             url = self.queue.pop(0)
@@ -116,11 +120,16 @@ class Music(commands.Cog):
 
 
     async def play_song(self, ctx, url):
+        print(f"Playing song: {url}")
+
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-        ctx.voice_client.play(player, after=self.on_finish_streaming)
+        ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
+
+        # Disable mentions because video titles could contain @everyone
+        await ctx.send(f"Now playing: {player.title}", allowed_mentions=discord.AllowedMentions.none())
 
 
-    @commands.command(aliases=["leave"])
+    @commands.command(aliases=["leave", "quit", "exit", "end"])
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
 
@@ -136,9 +145,7 @@ class Music(commands.Cog):
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
 
-        # elif ctx.voice_client.is_playing():
-        #     ctx.voice_client.stop()
-
+    # TODO: AFK timer before disconnecting and clearing queue
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -161,8 +168,8 @@ async def main():
 
     async with bot:
         await bot.add_cog(Music(bot))
-        # await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
         await bot.start(os.environ.get("DISCORD_TOKEN"))
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
 
 
 discord.utils.setup_logging(level=logging.INFO, root=False)
