@@ -1,4 +1,4 @@
-# This example requires the 'message_content' privileged intent to function.
+# This example requires the "message_content" privileged intent to function.
 
 import asyncio
 import logging
@@ -11,25 +11,25 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # Suppress noise about console usage from errors
-youtube_dl.utils.bug_reports_message = lambda: ''
+youtube_dl.utils.bug_reports_message = lambda: ""
 
 
 ytdl_format_options = {
-    'format': 'bestaudio/best[abr<=75]',  # TODO: Determine if the abr selector works
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0',  # bind to ipv4 since ipv6 addresses cause issues sometimes
+    "format": "bestaudio/best[abr<=75]",  # TODO: Determine if the abr selector works
+    "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
+    "restrictfilenames": True,
+    "noplaylist": True,
+    "nocheckcertificate": True,
+    "ignoreerrors": False,
+    "logtostderr": False,
+    "quiet": True,
+    "no_warnings": True,
+    "default_search": "auto",
+    "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
 ffmpeg_options = {
-    'options': '-vn',  # TODO: does -bufsize 2 work?
+    "options": "-vn",  # TODO: does -bufsize 2 work?
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -41,19 +41,19 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         self.data = data
 
-        self.title = data.get('title')
-        self.url = data.get('url')
+        self.title = data.get("title")
+        self.url = data.get("url")
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
-        if 'entries' in data:
+        if "entries" in data:
             # take first item from a playlist
-            data = data['entries'][0]
+            data = data["entries"][0]
 
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        filename = data["url"] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
@@ -63,7 +63,7 @@ class Music(commands.Cog):
         self.queue = []
 
     @commands.command()
-    async def join(self, ctx, *, channel: discord.VoiceChannel=None):
+    async def join(self, ctx, *, channel: discord.VoiceChannel = None):
         """Joins a voice channel"""
 
         if ctx.voice_client is not None:
@@ -79,7 +79,6 @@ class Music(commands.Cog):
         else:
             await channel.connect()
 
-
     @commands.command()
     async def play(self, ctx, *, url):
         """Streams from a url or adds to queue"""
@@ -92,12 +91,11 @@ class Music(commands.Cog):
             async with ctx.typing():
                 await self.play_song(ctx, url)
 
-
     @commands.command(aliases=["next"])
     async def skip(self, ctx):
         print("Skipping by user request")
-        ctx.voice_client.stop()  # Note: this causes the `after` function to be invoked, which is on_finish_streaming
-
+        # Note: this causes the `after` function to be invoked, which is on_finish_streaming
+        ctx.voice_client.stop()
 
     @commands.command()
     async def clear(self, ctx):
@@ -106,8 +104,8 @@ class Music(commands.Cog):
         self.queue.clear()
         ctx.send("Cleared queue")
 
-
     def on_finish_streaming(self, ctx, e=None):
+        """When we're done with a song, we play the next one, if available"""
         if e:
             print(f"Player error: {e}")
 
@@ -118,7 +116,6 @@ class Music(commands.Cog):
             # Execute an async function from this synchronous callback:
             asyncio.run_coroutine_threadsafe(self.play_song(ctx, url), self.bot.loop)
 
-
     async def play_song(self, ctx, url):
         print(f"Playing song: {url}")
 
@@ -126,8 +123,8 @@ class Music(commands.Cog):
         ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
 
         # Disable mentions because video titles could contain @everyone
-        await ctx.send(f"Now playing: {player.title}", allowed_mentions=discord.AllowedMentions.none())
-
+        await ctx.send(f"Now playing: {player.title}",
+                       allowed_mentions=discord.AllowedMentions.none())
 
     @commands.command(aliases=["leave", "quit", "exit", "end"])
     async def stop(self, ctx):
@@ -147,20 +144,21 @@ class Music(commands.Cog):
 
     # TODO: AFK timer before disconnecting and clearing queue
 
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(
     command_prefix=commands.when_mentioned_or("!"),
-    description='Relatively simple music bot example',
+    description="Simple music bot with queueing",
     intents=intents,
 )
 
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    print('------')
+    print(f"Logged in as {bot.user} (ID: {bot.user.id})")
+    print("------")
 
 
 async def main():
@@ -169,7 +167,9 @@ async def main():
     async with bot:
         await bot.add_cog(Music(bot))
         await bot.start(os.environ.get("DISCORD_TOKEN"))
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!play"))
+        await bot.change_presence(
+            activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
+        )
 
 
 discord.utils.setup_logging(level=logging.INFO, root=False)
