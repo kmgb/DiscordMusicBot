@@ -95,7 +95,7 @@ class Music(commands.Cog):
 
         print("Skipping by user request")
         # Note: this causes the `after` function to be invoked, which is on_finish_streaming
-        await ctx.voice_client.stop()
+        ctx.voice_client.stop()
 
     @commands.command()
     async def clear(self, ctx):
@@ -129,8 +129,14 @@ class Music(commands.Cog):
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
         ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
 
-        # Disable mentions because video titles could contain @everyone
-        await ctx.send(f"Now playing: {player.title}",
+        title = player.title
+        title = discord.utils.escape_markdown(title)
+        title = discord.utils.escape_mentions(title)
+        # TODO: Sanitize links in youtube titles?
+
+        # Disable mentions. Even if we escape them, there could still be some input that
+        # triggers an @everyone due to a bug.
+        await ctx.send(f"Now playing: {title}",
                        allowed_mentions=discord.AllowedMentions.none())
 
     def clear_queue(self):
@@ -153,6 +159,10 @@ class Music(commands.Cog):
             else:
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
+
+    @commands.Cog.listener(name="on_command")
+    async def log_command(self, ctx):
+        print(f"Command issued: {ctx.guild.name} > {ctx.author} > {ctx.command} [{ctx.message.content}]")
 
 
 intents = discord.Intents.default()
@@ -184,9 +194,10 @@ async def on_message(message: discord.Message):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    print("Voice state update")
     if not bot.voice_clients:
         return
+
+    print("Voice state update")
 
     for client in bot.voice_clients:
         if len(client.channel.members) <= 1:

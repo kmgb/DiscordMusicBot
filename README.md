@@ -6,7 +6,7 @@ Based on the "basic_voice" discord.py example, expanded to add song queueing and
 ## Commands
 `!play <url>`  
 `!skip`  
-`!join <channel>`  
+`!join [channel]`  
 `!stop`  
 `!clear`
 
