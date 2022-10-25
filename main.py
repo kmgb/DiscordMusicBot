@@ -32,6 +32,8 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
+default_presence_activity = discord.Activity(type=discord.ActivityType.listening, name="!play")
+
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -139,6 +141,10 @@ class Music(commands.Cog):
         await ctx.send(f"Now playing: {title}",
                        allowed_mentions=discord.AllowedMentions.none())
 
+        await ctx.bot.change_presence(
+            activity=discord.Activity(type=discord.ActivityType.listening, name=player.title)
+        )
+
     def clear_queue(self):
         self.queue.clear()
 
@@ -151,6 +157,10 @@ class Music(commands.Cog):
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
 
+        await ctx.bot.change_presence(
+            activity=default_presence_activity
+        )
+
     @play.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
@@ -162,7 +172,8 @@ class Music(commands.Cog):
 
     @commands.Cog.listener(name="on_command")
     async def log_command(self, ctx):
-        print(f"Command issued: {ctx.guild.name} > {ctx.author} > {ctx.command} [{ctx.message.content}]")
+        print(f"Command issued: {ctx.guild.name} > {ctx.author}"
+              + f" > {ctx.command} [{ctx.message.content}]")
 
 
 intents = discord.Intents.default()
@@ -181,7 +192,7 @@ async def on_ready():
     print("------")
 
     await bot.change_presence(
-        activity=discord.Activity(type=discord.ActivityType.listening, name="!play")
+        activity=default_presence_activity
     )
 
 
