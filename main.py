@@ -43,6 +43,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         self.title = data.get("title")
         self.url = data.get("url")
+        self.artist = data.get("artist", None)
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
@@ -137,18 +138,23 @@ class Music(commands.Cog):
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
         ctx.voice_client.play(player, after=lambda e: self.on_finish_streaming(ctx, e))
 
-        title = player.title
-        title = discord.utils.escape_markdown(title)
-        title = discord.utils.escape_mentions(title)
+        title = (
+            f"{player.title}" if not player.artist else
+            f"{player.title} by {player.artist}"
+        )
+
+        sanitized_title = discord.utils.escape_markdown(title)
+        sanitized_title = discord.utils.escape_mentions(sanitized_title)
         # TODO: Sanitize links in youtube titles?
 
         # Disable mentions. Even if we escape them, there could still be some input that
         # triggers an @everyone due to a bug.
-        await ctx.send(f"Now playing: {title}",
+        await ctx.send(f"Now playing: {sanitized_title}",
                        allowed_mentions=discord.AllowedMentions.none())
 
+        # We can use the unsanitized title in presence, no pings or markdown syntax work here
         await ctx.bot.change_presence(
-            activity=discord.Activity(type=discord.ActivityType.listening, name=player.title)
+            activity=discord.Activity(type=discord.ActivityType.listening, name=title)
         )
 
     def clear_queue(self):
