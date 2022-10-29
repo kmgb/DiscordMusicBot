@@ -124,6 +124,12 @@ class Music(commands.Cog):
             url = self.queue.pop(0)
             # Execute an async function from this synchronous callback:
             asyncio.run_coroutine_threadsafe(self.play_song(ctx, url), self.bot.loop)
+        else:
+            # Clear our activity if there is nothing else to play
+            asyncio.run_coroutine_threadsafe(
+                self.bot.change_presence(activity=default_presence_activity),
+                self.bot.loop
+            )
 
     async def play_song(self, ctx, url):
         print(f"Playing song: {url}")
