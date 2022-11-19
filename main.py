@@ -3,13 +3,13 @@ import logging
 import os
 
 import discord
-import youtube_dl
+import yt_dlp
 
 from discord.ext import commands
 from dotenv import load_dotenv
 
 # Suppress noise about console usage from errors
-youtube_dl.utils.bug_reports_message = lambda: ""
+yt_dlp.utils.bug_reports_message = lambda: ""
 
 
 ytdl_format_options = {
@@ -30,7 +30,7 @@ ffmpeg_options = {
     "options": "-vn",  # TODO: does -bufsize 2 work?
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
 
 default_presence_activity = discord.Activity(type=discord.ActivityType.listening, name="!play")
 
